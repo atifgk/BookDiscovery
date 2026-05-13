@@ -13,12 +13,12 @@ public interface IAiQueryParser
 public class OpenAiQueryParser : IAiQueryParser
 {
     private readonly HttpClient _httpClient;
-    private readonly IAppConfig _config;
+    private readonly AppConfiguration _config;
     private readonly ILogger<OpenAiQueryParser> _logger;
 
     public OpenAiQueryParser(
         HttpClient httpClient,
-        IAppConfig config,
+        AppConfiguration config,
         ILogger<OpenAiQueryParser> logger)
     {
         _httpClient = httpClient;
@@ -30,10 +30,14 @@ public class OpenAiQueryParser : IAiQueryParser
     {
         try
         {
-            var apiKey = _config.OpenAIApiKey;
+            var apiKey = _config.OpenAIAPIKey;
 
             if (string.IsNullOrWhiteSpace(apiKey))
-                throw new Exception("OpenAI API key is missing.");
+            {
+                _logger.LogError("OpenAI API key is missing.");
+
+                return null;
+            }
 
             var requestBody = new
             {

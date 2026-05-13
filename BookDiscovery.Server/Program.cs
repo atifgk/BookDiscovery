@@ -25,8 +25,12 @@ builder.Services.AddCors(options =>
     });
 });
 
-builder.Services.Configure<IAppConfig>(
-    builder.Configuration.GetSection("AppConfig"));
+var appConfig = new AppConfiguration
+{
+    OpenAIAPIKey = builder.Configuration.GetSection("OpenAI:ApiKey").Get<string>() ?? string.Empty
+};
+
+builder.Services.AddSingleton(appConfig);
 
 var app = builder.Build();
 
