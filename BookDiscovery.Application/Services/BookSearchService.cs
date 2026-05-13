@@ -1,53 +1,57 @@
-﻿using Microsoft.Extensions.Logging;
+﻿using BookDiscovery.Application.Interfaces;
 using BookDiscovery.Domain.Models;
+using Microsoft.Extensions.Logging;
 using System.Text.Json;
-using BookDiscovery.Application.Interfaces;
 
 namespace BookDiscovery.Application.Services
 {
-    
     public class BookSearchService : IBookSearchService
     {
         private readonly HttpClient _httpClient;
         private readonly IAiQueryParser _parser;
         private readonly IBookRankingService _rankingService;
+        private readonly IOpenLibraryEnrichmentService _enrichmentService;
         private readonly ILogger<BookSearchService> _logger;
 
-        public BookSearchService(HttpClient httpClient, IAiQueryParser parser, IBookRankingService rankingService, ILogger<BookSearchService> logger)
+        public BookSearchService(
+            HttpClient httpClient,
+            IAiQueryParser parser,
+            IBookRankingService rankingService,
+            IOpenLibraryEnrichmentService enrichmentService,
+            ILogger<BookSearchService> logger)
         {
             _httpClient = httpClient;
             _parser = parser;
             _rankingService = rankingService;
-            _logger = logger;
+            _enrichmentService = enrichmentService;
+            _logger = logger;            
         }
 
         public async Task<List<BookInfo>> SearchAsync(string query)
         {
             if (string.IsNullOrWhiteSpace(query))
-            {
                 return new List<BookInfo>();
-            }
 
-            var searchQuery = query;
-
+            // ----------------------------
+            // 1. AI INTENT EXTRACTION
+            // ----------------------------
             var intent = await _parser.ExtractAsync(query);
 
-            if (intent != null)
-            {
-                searchQuery = intent.Title ?? intent.Author ?? string.Join(" ", intent.Keywords);
+            string searchQuery = BuildSearchQuery(query, intent);
 
-                _logger.LogInformation("Parsed search intent: Title='{Title}', Author='{Author}', Keywords='{Keywords}'", intent.Title, intent.Author, string.Join(", ", intent.Keywords));
-            }
-            else
-            {
-                _logger.LogWarning("No specific intent extracted from query. Using raw query for search.");
-            }
+            _logger.LogInformation(
+                "SearchQuery: {SearchQuery}, Title: {Title}, Author: {Author}",
+                searchQuery,
+                intent?.Title,
+                intent?.Author
+            );
 
-
-            var url = $"https://openlibrary.org/search.json?q={searchQuery}";
+            // ----------------------------
+            // 2. OPEN LIBRARY SEARCH
+            // ----------------------------
+            var url = $"https://openlibrary.org/search.json?q={Uri.EscapeDataString(searchQuery)}";
 
             var response = await _httpClient.GetAsync(url);
-
             response.EnsureSuccessStatusCode();
 
             var json = await response.Content.ReadAsStringAsync();
@@ -59,44 +63,64 @@ namespace BookDiscovery.Application.Services
 
             var data = JsonSerializer.Deserialize<OpenLibrarySearchResponse>(json, options);
 
-            if (data?.Docs == null)
-            {
+            if (data?.Docs == null || !data.Docs.Any())
                 return new List<BookInfo>();
-            }
 
-            var filteredData = new List<BookInfo>();
+            
+            var books = data.Docs
+                .Select(book => new BookInfo
+                {
+                    Title = book.Title ?? "",
+                    Author = book.AuthorNames?.FirstOrDefault() ?? "",
+                    PublishedYear = book.FirstPublishYear?.ToString() ?? "",
+                    CoverImage = book.CoverId != null
+                        ? $"https://covers.openlibrary.org/b/id/{book.CoverId}-M.jpg"
+                        : null,
+                    OpenLibraryUrl = book.Key != null
+                        ? $"https://openlibrary.org{book.Key}"
+                        : null
+                })
+                .ToList();
+
+            List<BookInfo> result;
 
             if (intent == null)
             {
-                filteredData = data.Docs.Take(5)
-                 .Select(book => new BookInfo
-                 {
-                     Title = book.Title ?? "",
+                result = books.Take(5).ToList();
 
-                     Author = book.AuthorNames?.FirstOrDefault() ?? "",
-
-                     PublishedYear = book.FirstPublishYear?.ToString() ?? "",
-
-                     ShortInfo = $"Matched from Open Library search for '{query}'.",
-
-                     CoverImage = book.CoverId != null
-                         ? $"https://covers.openlibrary.org/b/id/{book.CoverId}-M.jpg"
-                         : null,
-
-                     OpenLibraryUrl = book.Key != null
-                         ? $"https://openlibrary.org{book.Key}"
-                         : null
-                 })
-                 .ToList();
+                foreach (var b in result)
+                {
+                    b.ShortInfo =
+                        $"Matched from Open Library using raw query '{query}'.";
+                }
             }
             else
             {
-                filteredData = _rankingService.Rank(intent, data.Docs);
+                result = _rankingService.Rank(intent, data.Docs);
             }
 
-            //Todo: add logic here /works/{work_id}.json/authors/{author_id}.json/authors/{author_id}/works.json
+            
+            result = await _enrichmentService.EnrichAsync(result);
 
-            return filteredData;
+            return result;
+        }
+
+        
+        private static string BuildSearchQuery(string raw, BookQueryIntent? intent)
+        {
+            if (intent == null)
+                return raw;
+
+            if (!string.IsNullOrWhiteSpace(intent.Title))
+                return intent.Title;
+
+            if (!string.IsNullOrWhiteSpace(intent.Author))
+                return intent.Author;
+
+            if (intent.Keywords?.Any() == true)
+                return string.Join(" ", intent.Keywords);
+
+            return raw;
         }
     }
 }
