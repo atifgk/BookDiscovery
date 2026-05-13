@@ -22,7 +22,7 @@ function App() {
                         <tr>
                             <th>Title</th>
                             <th>Author</th>
-                            <th>Published Date</th>
+                            <th>Published Year</th>
                             <th>Short Info</th>
                         </tr>
                     </thead>

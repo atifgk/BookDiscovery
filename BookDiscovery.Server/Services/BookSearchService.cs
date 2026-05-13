@@ -10,10 +10,14 @@ namespace BookDiscovery.Server.Services
     public class BookSearchService : IBookSearchService
     {
         private readonly HttpClient _httpClient;
+        private readonly IAiQueryParser _parser;
+        private readonly ILogger<BookSearchService> _logger;
 
-        public BookSearchService(HttpClient httpClient)
+        public BookSearchService(HttpClient httpClient, IAiQueryParser parser, ILogger<BookSearchService> logger)
         {
             _httpClient = httpClient;
+            _parser = parser;
+            _logger = logger;
         }
 
         public async Task<List<BookResultModel>> SearchAsync(string query)
@@ -23,9 +27,23 @@ namespace BookDiscovery.Server.Services
                 return new List<BookResultModel>();
             }
 
-            var encodedQuery = Uri.EscapeDataString(query);
+            var searchQuery = Uri.EscapeDataString(query);
 
-            var url = $"https://openlibrary.org/search.json?q={encodedQuery}";
+            var intent = await _parser.ExtractAsync(searchQuery);
+
+            if (intent != null)
+            {
+                searchQuery = intent.Title ?? intent.Author ?? string.Join(" ", intent.Keywords);
+
+                _logger.LogInformation("Parsed search intent: Title='{Title}', Author='{Author}', Keywords='{Keywords}'", intent.Title, intent.Author, string.Join(", ", intent.Keywords));
+            }
+            else
+            {
+                _logger.LogWarning("No specific intent extracted from query. Using raw query for search.");
+            }
+            
+
+            var url = $"https://openlibrary.org/search.json?q={searchQuery}";
 
             var response = await _httpClient.GetAsync(url);
 

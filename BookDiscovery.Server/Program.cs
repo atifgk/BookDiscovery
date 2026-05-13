@@ -9,7 +9,9 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddHttpClient();
+
 builder.Services.AddScoped<IBookSearchService, BookSearchService>();
+builder.Services.AddScoped<IAiQueryParser, OpenAiQueryParser>();
 
 builder.Services.AddCors(options =>
 {
