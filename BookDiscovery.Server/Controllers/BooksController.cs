@@ -1,7 +1,6 @@
 ﻿using BookDiscovery.Server.Models;
-using BookDiscovery.Server.Services;
+using BookDiscovery.Application.Services;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Routing.Matching;
 
 namespace BookDiscovery.Server.Controllers
 {

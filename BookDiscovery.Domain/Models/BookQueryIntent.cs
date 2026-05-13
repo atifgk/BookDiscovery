@@ -1,6 +1,6 @@
-﻿namespace BookDiscovery.Server.Models
+﻿namespace BookDiscovery.Domain.Models
 {
-    public class BookQueryIntentModel
+    public class BookQueryIntent
     {
         public string? Title { get; set; }
         public string? Author { get; set; }

@@ -1,6 +1,6 @@
-﻿namespace BookDiscovery.Server.Models
+﻿namespace BookDiscovery.Domain.Models
 {
-    public class BookResultModel
+    public class BookInfo
     {
         public string Title { get; set; } = string.Empty;
 

@@ -1,7 +1,9 @@
 <Solution>
+  <Project Path="BookDiscovery.Application/BookDiscovery.Application.csproj" Id="8154da99-95c7-42ce-acc4-9716e75df8db" />
   <Project Path="bookdiscovery.client/bookdiscovery.client.esproj">
     <Build />
     <Deploy />
   </Project>
+  <Project Path="BookDiscovery.Domain/BookDiscovery.Domain.csproj" Id="750b545c-df64-46b1-b59a-ebda165fb190" />
   <Project Path="BookDiscovery.Server/BookDiscovery.Server.csproj" />
 </Solution>

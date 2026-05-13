@@ -1,17 +1,17 @@
-﻿using BookDiscovery.Server.Models;
+﻿using BookDiscovery.Domain.Models;
 
-namespace BookDiscovery.Server.Services
+namespace BookDiscovery.Application.Services
 {
     public interface IBookRankingService
     {
-        List<BookResultModel> Rank(BookQueryIntentModel query, List<OpenLibraryBookDoc> candidates);
+        List<BookInfo> Rank(BookQueryIntent query, List<OpenLibraryBookDoc> candidates);
     }
 
     public class BookRankingService : IBookRankingService
     {
-        public List<BookResultModel> Rank(BookQueryIntentModel query, List<OpenLibraryBookDoc> candidates)
+        public List<BookInfo> Rank(BookQueryIntent query, List<OpenLibraryBookDoc> candidates)
         {
-            var results = new List<BookResultModel>();
+            var results = new List<BookInfo>();
 
             var qTitle = Normalize(query.Title ?? "");
             var qAuthor = Normalize(query.Author ?? "");
@@ -80,7 +80,7 @@ namespace BookDiscovery.Server.Services
                     explanationParts.Add("Missing reliable author metadata");
                 }
 
-                results.Add(new BookResultModel
+                results.Add(new BookInfo
                 {
                     Title = title,
                     Author = authorNames,

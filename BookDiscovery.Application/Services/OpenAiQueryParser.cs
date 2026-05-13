@@ -1,22 +1,24 @@
-﻿using BookDiscovery.Server.Models;
+﻿using BookDiscovery.Domain.Models;
+using BookDiscovery.Application;
+using Microsoft.Extensions.Logging;
 using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
 
 public interface IAiQueryParser
 {
-    Task<BookQueryIntentModel?> ExtractAsync(string query);
+    Task<BookQueryIntent?> ExtractAsync(string query);
 }
 
 public class OpenAiQueryParser : IAiQueryParser
 {
     private readonly HttpClient _httpClient;
-    private readonly IConfiguration _config;
+    private readonly IAppConfig _config;
     private readonly ILogger<OpenAiQueryParser> _logger;
 
     public OpenAiQueryParser(
         HttpClient httpClient,
-        IConfiguration config,
+        IAppConfig config,
         ILogger<OpenAiQueryParser> logger)
     {
         _httpClient = httpClient;
@@ -24,11 +26,11 @@ public class OpenAiQueryParser : IAiQueryParser
         _logger = logger;
     }
 
-    public async Task<BookQueryIntentModel?> ExtractAsync(string query)
+    public async Task<BookQueryIntent?> ExtractAsync(string query)
     {
         try
         {
-            var apiKey = _config["OpenAI:ApiKey"];
+            var apiKey = _config.OpenAIApiKey;
 
             if (string.IsNullOrWhiteSpace(apiKey))
                 throw new Exception("OpenAI API key is missing.");
@@ -108,7 +110,7 @@ public class OpenAiQueryParser : IAiQueryParser
         }
     }
 
-    private BookQueryIntentModel ParseResponse(string json)
+    private BookQueryIntent ParseResponse(string json)
     {
         using var doc = JsonDocument.Parse(json);
 
@@ -119,15 +121,15 @@ public class OpenAiQueryParser : IAiQueryParser
             .GetString();
 
         if (string.IsNullOrWhiteSpace(content))
-            return new BookQueryIntentModel();
+            return new BookQueryIntent();
 
-        var result = JsonSerializer.Deserialize<BookQueryIntentModel>(
+        var result = JsonSerializer.Deserialize<BookQueryIntent>(
                    content,
                    new JsonSerializerOptions
                    {
                        PropertyNameCaseInsensitive = true
                    })
-               ?? new BookQueryIntentModel();
+               ?? new BookQueryIntent();
 
         result.IsAIExtracted = true;
 

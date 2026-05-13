@@ -17,9 +17,14 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\BookDiscovery.Application\BookDiscovery.Application.csproj" />
     <ProjectReference Include="..\bookdiscovery.client\bookdiscovery.client.esproj">
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
     </ProjectReference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Services\" />
   </ItemGroup>
 
 </Project>

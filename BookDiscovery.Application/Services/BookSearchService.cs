@@ -1,11 +1,12 @@
-﻿using BookDiscovery.Server.Models;
+﻿using Microsoft.Extensions.Logging;
+using BookDiscovery.Domain.Models;
 using System.Text.Json;
 
-namespace BookDiscovery.Server.Services
+namespace BookDiscovery.Application.Services
 {
     public interface IBookSearchService
     {
-        Task<List<BookResultModel>> SearchAsync(string query);
+        Task<List<BookInfo>> SearchAsync(string query);
     }
     public class BookSearchService : IBookSearchService
     {
@@ -22,11 +23,11 @@ namespace BookDiscovery.Server.Services
             _logger = logger;
         }
 
-        public async Task<List<BookResultModel>> SearchAsync(string query)
+        public async Task<List<BookInfo>> SearchAsync(string query)
         {
             if (string.IsNullOrWhiteSpace(query))
             {
-                return new List<BookResultModel>();
+                return new List<BookInfo>();
             }
 
             var searchQuery = query;
@@ -62,13 +63,13 @@ namespace BookDiscovery.Server.Services
 
             if (data?.Docs == null)
             {
-                return new List<BookResultModel>();
+                return new List<BookInfo>();
             }
 
             if (intent == null)
             {
                 return data.Docs.Take(5)
-                 .Select(book => new BookResultModel
+                 .Select(book => new BookInfo
                  {
                      Title = book.Title ?? "",
 

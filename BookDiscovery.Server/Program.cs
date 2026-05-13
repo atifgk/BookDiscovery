@@ -1,4 +1,5 @@
-using BookDiscovery.Server.Services;
+using BookDiscovery.Application;
+using BookDiscovery.Application.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -23,6 +24,9 @@ builder.Services.AddCors(options =>
               .AllowAnyMethod();
     });
 });
+
+builder.Services.Configure<IAppConfig>(
+    builder.Configuration.GetSection("AppConfig"));
 
 var app = builder.Build();
 

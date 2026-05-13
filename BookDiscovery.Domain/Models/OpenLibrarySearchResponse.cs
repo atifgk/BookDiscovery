@@ -1,6 +1,6 @@
 ﻿using System.Text.Json.Serialization;
 
-namespace BookDiscovery.Server.Models
+namespace BookDiscovery.Domain.Models
 {
     public class OpenLibrarySearchResponse
     {
