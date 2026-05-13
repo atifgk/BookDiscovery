@@ -118,6 +118,20 @@ $"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:gener
         if (string.IsNullOrWhiteSpace(content))
             return new BookQueryIntent();
 
+        
+        content = content.Trim();
+
+        if (content.StartsWith("```"))
+        {
+            var firstNewLine = content.IndexOf('\n');
+            var lastBackticks = content.LastIndexOf("```");
+
+            if (firstNewLine > -1 && lastBackticks > firstNewLine)
+            {
+                content = content.Substring(firstNewLine, lastBackticks - firstNewLine).Trim();
+            }
+        }
+
         var result = JsonSerializer.Deserialize<BookQueryIntent>(
             content,
             new JsonSerializerOptions
