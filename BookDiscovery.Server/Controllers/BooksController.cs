@@ -21,7 +21,7 @@ namespace BookDiscovery.Server.Controllers
         {
             var searchedBooks = await _service.SearchAsync(request.Query);
 
-            return Ok(result);
+            return Ok(searchedBooks);
         }
     }
 }

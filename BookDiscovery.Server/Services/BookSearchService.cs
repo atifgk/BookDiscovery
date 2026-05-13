@@ -18,8 +18,8 @@ namespace BookDiscovery.Server.Services
         {
             _httpClient = httpClient;
             _parser = parser;
-            _logger = logger;
             _rankingService = rankingService;
+            _logger = logger;
         }
 
         public async Task<List<BookResultModel>> SearchAsync(string query)
@@ -29,9 +29,9 @@ namespace BookDiscovery.Server.Services
                 return new List<BookResultModel>();
             }
 
-            var searchQuery = Uri.EscapeDataString(query);
+            var searchQuery = query;
 
-            var intent = await _parser.ExtractAsync(searchQuery);
+            var intent = await _parser.ExtractAsync(query);
 
             if (intent != null)
             {
@@ -65,27 +65,32 @@ namespace BookDiscovery.Server.Services
                 return new List<BookResultModel>();
             }
 
-            return intent != null ? _rankingService.Rank(intent, data.Docs) : data.Docs
-                .Take(5)
-                .Select(book => new BookResultModel
-                {
-                    Title = book.Title ?? "",
+            if (intent == null)
+            {
+                return data.Docs.Take(5)
+                 .Select(book => new BookResultModel
+                 {
+                     Title = book.Title ?? "",
 
-                    Author = book.AuthorNames?.FirstOrDefault() ?? "",
+                     Author = book.AuthorNames?.FirstOrDefault() ?? "",
 
-                    PublishedYear = book.FirstPublishYear?.ToString() ?? "",
+                     PublishedYear = book.FirstPublishYear?.ToString() ?? "",
 
-                    ShortInfo = $"Matched from Open Library search for '{query}'.",
+                     ShortInfo = $"Matched from Open Library search for '{query}'.",
 
-                    CoverImage = book.CoverId != null
-                        ? $"https://covers.openlibrary.org/b/id/{book.CoverId}-M.jpg"
-                        : null,
+                     CoverImage = book.CoverId != null
+                         ? $"https://covers.openlibrary.org/b/id/{book.CoverId}-M.jpg"
+                         : null,
 
-                    OpenLibraryUrl = book.Key != null
-                        ? $"https://openlibrary.org{book.Key}"
-                        : null
-                })
-                .ToList();
+                     OpenLibraryUrl = book.Key != null
+                         ? $"https://openlibrary.org{book.Key}"
+                         : null
+                 })
+                 .ToList();
+            }
+
+
+            return _rankingService.Rank(intent, data.Docs);
         }
     }
 }

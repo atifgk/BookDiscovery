@@ -12,6 +12,7 @@ builder.Services.AddHttpClient();
 
 builder.Services.AddScoped<IBookSearchService, BookSearchService>();
 builder.Services.AddScoped<IAiQueryParser, OpenAiQueryParser>();
+builder.Services.AddScoped<IBookRankingService, BookRankingService>();
 
 builder.Services.AddCors(options =>
 {

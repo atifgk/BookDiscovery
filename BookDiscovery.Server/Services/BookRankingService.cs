@@ -13,8 +13,8 @@ namespace BookDiscovery.Server.Services
         {
             var results = new List<BookResultModel>();
 
-            var qTitle = query.Title ?? "";
-            var qAuthor = query.Author ?? "";
+            var qTitle = Normalize(query.Title ?? "");
+            var qAuthor = Normalize(query.Author ?? "");
 
             foreach (var book in candidates)
             {
@@ -25,27 +25,32 @@ namespace BookDiscovery.Server.Services
                 var authorNames = string.Join(", ", book.AuthorNames ?? Enumerable.Empty<string>());
 
                 // 1. Exact title match
-                if (!string.IsNullOrEmpty(qTitle) && title.Contains(qTitle))
+                if (!string.IsNullOrWhiteSpace(qTitle) && Normalize(title).Contains(qTitle))
                 {
-                    score += 40;
-                    explanationParts.Add("Title matches query");
+                    score += 50;
+                    explanationParts.Add("Title closely matches extracted intent");
                 }
 
                 // 2. Exact author match
-                if (!string.IsNullOrEmpty(qAuthor) && authorNames.Contains(qAuthor))
+                if (!string.IsNullOrWhiteSpace(qAuthor))
                 {
-                    score += 35;
-                    explanationParts.Add("Author matches query");
+                    var authors = Normalize(authorNames);
+
+                    if (authors.Contains(qAuthor))
+                    {
+                        score += 40;
+                        explanationParts.Add("Author matches extracted intent");
+                    }
                 }
 
                 // 3. Both title + author strong match
-                if (!string.IsNullOrEmpty(qTitle) &&
-                    !string.IsNullOrEmpty(qAuthor) &&
-                    title.Contains(qTitle) &&
-                    authorNames.Contains(qAuthor))
+                if (!string.IsNullOrWhiteSpace(qTitle) &&
+                    !string.IsNullOrWhiteSpace(qAuthor) &&
+                    Normalize(title).Contains(qTitle) &&
+                    Normalize(authorNames).Contains(qAuthor))
                 {
-                    score += 50;
-                    explanationParts.Add("Strong title + author match");
+                    score += 60;
+                    explanationParts.Add("Strong title + author match (highest confidence)");
                 }
 
                 // 4. Keyword matching (AI extracted keywords)
@@ -53,21 +58,26 @@ namespace BookDiscovery.Server.Services
                 {
                     foreach (var kw in query.Keywords)
                     {
-                        var normKw = kw;
+                        var normKw = Normalize(kw);
 
-                        if (title.Contains(normKw) || authorNames.Contains(normKw))
+                        if (Normalize(title).Contains(normKw))
                         {
-                            score += 10;
-                            explanationParts.Add($"Keyword '{kw}' matched");
+                            score += 12;
+                            explanationParts.Add($"Keyword '{kw}' found in title");
+                        }
+
+                        if (Normalize(authorNames).Contains(normKw))
+                        {
+                            score += 8;
+                            explanationParts.Add($"Keyword '{kw}' found in author");
                         }
                     }
                 }
 
-                // 5. Penalty for weak/unknown author
-                if (string.IsNullOrEmpty(authorNames) || authorNames == "Unknown Author")
+                if (string.IsNullOrWhiteSpace(authorNames))
                 {
-                    score -= 5;
-                    explanationParts.Add("Weak author metadata");
+                    score -= 10;
+                    explanationParts.Add("Missing reliable author metadata");
                 }
 
                 results.Add(new BookResultModel
@@ -86,6 +96,13 @@ namespace BookDiscovery.Server.Services
                 .OrderByDescending(x => x.Score)
                 .Take(5)
                 .ToList();
+        }
+
+        private string Normalize(string input)
+        {
+            return (input ?? "")
+                .ToLowerInvariant()
+                .Trim();
         }
     }
 }
