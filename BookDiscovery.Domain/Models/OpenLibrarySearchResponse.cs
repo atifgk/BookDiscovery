@@ -30,21 +30,38 @@ namespace BookDiscovery.Domain.Models
     {
         public string? Title { get; set; }
 
+        [JsonPropertyName("subtitle")]
         public string? Subtitle { get; set; }
 
-        public string? Description { get; set; }
+        [JsonPropertyName("description")]
+        public OpenLibraryDescription? Description { get; set; }
 
         public List<OpenLibraryWorkAuthor>? Authors { get; set; }
+
+        [JsonPropertyName("first_publish_date")]
+        public string? FirstPublishDate { get; set; }
+
+        public List<string>? Subjects { get; set; }
+    }
+
+    public class OpenLibraryDescription
+    {
+        public string? Value { get; set; }
     }
 
     public class OpenLibraryWorkAuthor
     {
         public OpenLibraryAuthorReference? Author { get; set; }
 
-        public string? Type { get; set; }
+        public OpenLibraryType? Type { get; set; }
     }
 
     public class OpenLibraryAuthorReference
+    {
+        public string? Key { get; set; }
+    }
+
+    public class OpenLibraryType
     {
         public string? Key { get; set; }
     }
@@ -55,6 +72,6 @@ namespace BookDiscovery.Domain.Models
 
         public string? PersonalName { get; set; }
 
-        public string? Bio { get; set; }
+        public OpenLibraryDescription? Bio { get; set; }
     }
 }

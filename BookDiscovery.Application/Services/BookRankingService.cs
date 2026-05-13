@@ -114,7 +114,7 @@ namespace BookDiscovery.Application.Services
                         score += 1;
                     }
 
-                    
+
                     if (!string.IsNullOrWhiteSpace(authorNames))
                     {
                         score += 2;
@@ -125,6 +125,8 @@ namespace BookDiscovery.Application.Services
                 {
                     Title = title,
                     Author = authorNames,
+                    CoverImage = book.CoverImage,
+                    OpenLibraryUrl = book.OpenLibraryUrl,
                     PublishedYear = book.PublishedYear ?? "",
                     Score = score,
                     ShortInfo = string.Join(". ", explanationParts)
