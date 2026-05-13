@@ -1,4 +1,5 @@
-﻿using System.Text.Json.Serialization;
+﻿using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace BookDiscovery.Domain.Models
 {
@@ -33,8 +34,8 @@ namespace BookDiscovery.Domain.Models
         [JsonPropertyName("subtitle")]
         public string? Subtitle { get; set; }
 
-        [JsonPropertyName("description")]
-        public OpenLibraryDescription? Description { get; set; }
+        [JsonConverter(typeof(OpenLibraryDescriptionConverter))]
+        public string? Description { get; set; }
 
         public List<OpenLibraryWorkAuthor>? Authors { get; set; }
 
@@ -44,10 +45,7 @@ namespace BookDiscovery.Domain.Models
         public List<string>? Subjects { get; set; }
     }
 
-    public class OpenLibraryDescription
-    {
-        public string? Value { get; set; }
-    }
+
 
     public class OpenLibraryWorkAuthor
     {
@@ -72,6 +70,37 @@ namespace BookDiscovery.Domain.Models
 
         public string? PersonalName { get; set; }
 
-        public OpenLibraryDescription? Bio { get; set; }
+        [JsonConverter(typeof(OpenLibraryDescriptionConverter))]
+        public string? Description { get; set; }
+    }
+
+    public class OpenLibraryDescriptionConverter : JsonConverter<string?>
+    {
+        public override string? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+        {
+            // Case 1: "description": "text"
+            if (reader.TokenType == JsonTokenType.String)
+            {
+                return reader.GetString();
+            }
+
+            // Case 2: "description": { "value": "text" }
+            if (reader.TokenType == JsonTokenType.StartObject)
+            {
+                using var doc = JsonDocument.ParseValue(ref reader);
+
+                if (doc.RootElement.TryGetProperty("value", out var value))
+                {
+                    return value.GetString();
+                }
+            }
+
+            return null;
+        }
+
+        public override void Write(Utf8JsonWriter writer, string? value, JsonSerializerOptions options)
+        {
+            writer.WriteStringValue(value);
+        }
     }
 }
