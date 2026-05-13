@@ -1,13 +1,11 @@
 ﻿using Microsoft.Extensions.Logging;
 using BookDiscovery.Domain.Models;
 using System.Text.Json;
+using BookDiscovery.Application.Interfaces;
 
 namespace BookDiscovery.Application.Services
 {
-    public interface IBookSearchService
-    {
-        Task<List<BookInfo>> SearchAsync(string query);
-    }
+    
     public class BookSearchService : IBookSearchService
     {
         private readonly HttpClient _httpClient;
@@ -66,9 +64,11 @@ namespace BookDiscovery.Application.Services
                 return new List<BookInfo>();
             }
 
+            var filteredData = new List<BookInfo>();
+
             if (intent == null)
             {
-                return data.Docs.Take(5)
+                filteredData = data.Docs.Take(5)
                  .Select(book => new BookInfo
                  {
                      Title = book.Title ?? "",
@@ -89,9 +89,14 @@ namespace BookDiscovery.Application.Services
                  })
                  .ToList();
             }
+            else
+            {
+                filteredData = _rankingService.Rank(intent, data.Docs);
+            }
 
+            //Todo: add logic here /works/{work_id}.json/authors/{author_id}.json/authors/{author_id}/works.json
 
-            return _rankingService.Rank(intent, data.Docs);
+            return filteredData;
         }
     }
 }

@@ -25,4 +25,36 @@ namespace BookDiscovery.Domain.Models
         [JsonPropertyName("key")]
         public string? Key { get; set; }
     }
+
+    public class OpenLibraryWork
+    {
+        public string? Title { get; set; }
+
+        public string? Subtitle { get; set; }
+
+        public string? Description { get; set; }
+
+        public List<OpenLibraryWorkAuthor>? Authors { get; set; }
+    }
+
+    public class OpenLibraryWorkAuthor
+    {
+        public OpenLibraryAuthorReference? Author { get; set; }
+
+        public string? Type { get; set; }
+    }
+
+    public class OpenLibraryAuthorReference
+    {
+        public string? Key { get; set; }
+    }
+
+    public class OpenLibraryAuthor
+    {
+        public string? Name { get; set; }
+
+        public string? PersonalName { get; set; }
+
+        public string? Bio { get; set; }
+    }
 }

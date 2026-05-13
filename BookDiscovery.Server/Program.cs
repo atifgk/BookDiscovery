@@ -1,4 +1,5 @@
 using BookDiscovery.Application;
+using BookDiscovery.Application.Interfaces;
 using BookDiscovery.Application.Services;
 
 var builder = WebApplication.CreateBuilder(args);

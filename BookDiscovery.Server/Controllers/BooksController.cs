@@ -1,5 +1,5 @@
-﻿using BookDiscovery.Server.Models;
-using BookDiscovery.Application.Services;
+﻿using BookDiscovery.Application.Interfaces;
+using BookDiscovery.Server.Models;
 using Microsoft.AspNetCore.Mvc;
 
 namespace BookDiscovery.Server.Controllers

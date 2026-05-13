@@ -1,20 +1,17 @@
-﻿using BookDiscovery.Domain.Models;
+﻿using BookDiscovery.Application.Interfaces;
+using BookDiscovery.Domain.Models;
+using System.Text.RegularExpressions;
 
 namespace BookDiscovery.Application.Services
 {
-    public interface IBookRankingService
-    {
-        List<BookInfo> Rank(BookQueryIntent query, List<OpenLibraryBookDoc> candidates);
-    }
-
     public class BookRankingService : IBookRankingService
     {
         public List<BookInfo> Rank(BookQueryIntent query, List<OpenLibraryBookDoc> candidates)
         {
             var results = new List<BookInfo>();
 
-            var qTitle = Normalize(query.Title ?? "");
-            var qAuthor = Normalize(query.Author ?? "");
+            var qTitle = (query.Title ?? "").Normalize();
+            var qAuthor = (query.Author ?? "").Normalize();
 
             foreach (var book in candidates)
             {
@@ -25,7 +22,7 @@ namespace BookDiscovery.Application.Services
                 var authorNames = string.Join(", ", book.AuthorNames ?? Enumerable.Empty<string>());
 
                 // 1. Exact title match
-                if (!string.IsNullOrWhiteSpace(qTitle) && Normalize(title).Contains(qTitle))
+                if (!string.IsNullOrWhiteSpace(qTitle) && title.Normalize().Contains(qTitle))
                 {
                     score += 50;
                     explanationParts.Add("Title closely matches extracted intent");
@@ -34,7 +31,7 @@ namespace BookDiscovery.Application.Services
                 // 2. Exact author match
                 if (!string.IsNullOrWhiteSpace(qAuthor))
                 {
-                    var authors = Normalize(authorNames);
+                    var authors = authorNames.Normalize();
 
                     if (authors.Contains(qAuthor))
                     {
@@ -46,8 +43,8 @@ namespace BookDiscovery.Application.Services
                 // 3. Both title + author strong match
                 if (!string.IsNullOrWhiteSpace(qTitle) &&
                     !string.IsNullOrWhiteSpace(qAuthor) &&
-                    Normalize(title).Contains(qTitle) &&
-                    Normalize(authorNames).Contains(qAuthor))
+                    title.Normalize().Contains(qTitle) &&
+                    authorNames.Normalize().Contains(qAuthor))
                 {
                     score += 60;
                     explanationParts.Add("Strong title + author match (highest confidence)");
@@ -58,15 +55,15 @@ namespace BookDiscovery.Application.Services
                 {
                     foreach (var kw in query.Keywords)
                     {
-                        var normKw = Normalize(kw);
+                        var normKw = (kw ?? "").Normalize();
 
-                        if (Normalize(title).Contains(normKw))
+                        if (title.Normalize().Contains(normKw))
                         {
                             score += 12;
                             explanationParts.Add($"Keyword '{kw}' found in title");
                         }
 
-                        if (Normalize(authorNames).Contains(normKw))
+                        if (authorNames.Normalize().Contains(normKw))
                         {
                             score += 8;
                             explanationParts.Add($"Keyword '{kw}' found in author");
@@ -87,7 +84,7 @@ namespace BookDiscovery.Application.Services
                     PublishedYear = book.FirstPublishYear?.ToString() ?? "",
                     //WorkKey = book.OpenLibraryUrl,
                     Score = score,
-                    ShortInfo = string.Join("; ", explanationParts)
+                    ShortInfo = string.Join(". ", explanationParts)
                 });
             }
 
@@ -98,11 +95,5 @@ namespace BookDiscovery.Application.Services
                 .ToList();
         }
 
-        private string Normalize(string input)
-        {
-            return (input ?? "")
-                .ToLowerInvariant()
-                .Trim();
-        }
     }
 }

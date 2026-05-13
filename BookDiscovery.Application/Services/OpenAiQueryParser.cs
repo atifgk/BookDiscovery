@@ -4,11 +4,7 @@ using Microsoft.Extensions.Logging;
 using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
-
-public interface IAiQueryParser
-{
-    Task<BookQueryIntent?> ExtractAsync(string query);
-}
+using BookDiscovery.Application.Interfaces;
 
 public class OpenAiQueryParser : IAiQueryParser
 {
