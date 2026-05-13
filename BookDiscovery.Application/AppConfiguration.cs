@@ -3,6 +3,6 @@
 
     public class AppConfiguration
     {
-        public string OpenAIAPIKey { get; set; } = "";
+        public string GeminiApiKey { get; set; } = "";
     }
 }

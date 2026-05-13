@@ -13,7 +13,7 @@ builder.Services.AddSwaggerGen();
 builder.Services.AddHttpClient();
 
 builder.Services.AddScoped<IBookSearchService, BookSearchService>();
-builder.Services.AddScoped<IAiQueryParser, OpenAiQueryParser>();
+builder.Services.AddScoped<IAiQueryParser, GeminiQueryParser>();
 builder.Services.AddScoped<IBookRankingService, BookRankingService>();
 builder.Services.AddScoped<IOpenLibraryEnrichmentService, OpenLibraryEnrichmentService>();
 
@@ -29,7 +29,7 @@ builder.Services.AddCors(options =>
 
 var appConfig = new AppConfiguration
 {
-    OpenAIAPIKey = builder.Configuration.GetSection("OpenAI:ApiKey").Get<string>() ?? string.Empty
+    GeminiApiKey = builder.Configuration.GetSection("Gemini:ApiKey").Get<string>() ?? string.Empty
 };
 
 builder.Services.AddSingleton(appConfig);
