@@ -24,7 +24,7 @@ namespace BookDiscovery.Application.Services
             _parser = parser;
             _rankingService = rankingService;
             _enrichmentService = enrichmentService;
-            _logger = logger;            
+            _logger = logger;
         }
 
         public async Task<List<BookInfo>> SearchAsync(string query)
@@ -66,7 +66,7 @@ namespace BookDiscovery.Application.Services
             if (data?.Docs == null || !data.Docs.Any())
                 return new List<BookInfo>();
 
-            
+
             var books = data.Docs
                 .Select(book => new BookInfo
                 {
@@ -84,28 +84,14 @@ namespace BookDiscovery.Application.Services
 
             List<BookInfo> result;
 
-            if (intent == null)
-            {
-                result = books.Take(5).ToList();
+            result = _rankingService.Rank(intent, books, query);
 
-                foreach (var b in result)
-                {
-                    b.ShortInfo =
-                        $"Matched from Open Library using raw query '{query}'.";
-                }
-            }
-            else
-            {
-                result = _rankingService.Rank(intent, data.Docs);
-            }
-
-            
             result = await _enrichmentService.EnrichAsync(result);
 
             return result;
         }
 
-        
+
         private static string BuildSearchQuery(string raw, BookQueryIntent? intent)
         {
             if (intent == null)

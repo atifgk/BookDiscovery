@@ -1,17 +1,26 @@
 ﻿using BookDiscovery.Application.Interfaces;
 using BookDiscovery.Domain.Models;
-using System.Text.RegularExpressions;
+using BookDiscovery.Application.Common;
 
 namespace BookDiscovery.Application.Services
 {
     public class BookRankingService : IBookRankingService
     {
-        public List<BookInfo> Rank(BookQueryIntent query, List<OpenLibraryBookDoc> candidates)
+        public List<BookInfo> Rank(BookQueryIntent? query, List<BookInfo> candidates, string? rawQuery = null)
         {
             var results = new List<BookInfo>();
 
-            var qTitle = (query.Title ?? "").Normalize();
-            var qAuthor = (query.Author ?? "").Normalize();
+            bool hasIntent = query != null;
+
+            var qTitle = hasIntent ? (query!.Title ?? "").NormalizeTitle() : "";
+            var qAuthor = hasIntent ? (query!.Author ?? "").NormalizeTitle() : "";
+            var keywords = hasIntent ? query!.Keywords : new List<string>();
+
+            var fallbackKeywords = !hasIntent && !string.IsNullOrWhiteSpace(rawQuery)
+                ? rawQuery.Split(' ', StringSplitOptions.RemoveEmptyEntries)
+                    .Select(x => x.NormalizeTitle())
+                    .ToList()
+                : new List<string>();
 
             foreach (var book in candidates)
             {
@@ -19,81 +28,113 @@ namespace BookDiscovery.Application.Services
                 var explanationParts = new List<string>();
 
                 var title = book.Title ?? "";
-                var authorNames = string.Join(", ", book.AuthorNames ?? Enumerable.Empty<string>());
+                var authorNames = book.Author ?? "";
 
-                // 1. Exact title match
-                if (!string.IsNullOrWhiteSpace(qTitle) && title.Normalize().Contains(qTitle))
+                var normTitle = title.NormalizeTitle();
+                var normAuthor = authorNames.NormalizeTitle();
+
+                if (hasIntent)
                 {
-                    score += 50;
-                    explanationParts.Add("Title closely matches extracted intent");
-                }
+                    if (!string.IsNullOrWhiteSpace(qTitle) &&
+                        normTitle.Contains(qTitle))
+                    {
+                        score += 50;
+                        explanationParts.Add("Title matches extracted intent");
+                    }
 
-                // 2. Exact author match
-                if (!string.IsNullOrWhiteSpace(qAuthor))
-                {
-                    var authors = authorNames.Normalize();
-
-                    if (authors.Contains(qAuthor))
+                    if (!string.IsNullOrWhiteSpace(qAuthor) &&
+                        normAuthor.Contains(qAuthor))
                     {
                         score += 40;
                         explanationParts.Add("Author matches extracted intent");
                     }
-                }
 
-                // 3. Both title + author strong match
-                if (!string.IsNullOrWhiteSpace(qTitle) &&
-                    !string.IsNullOrWhiteSpace(qAuthor) &&
-                    title.Normalize().Contains(qTitle) &&
-                    authorNames.Normalize().Contains(qAuthor))
-                {
-                    score += 60;
-                    explanationParts.Add("Strong title + author match (highest confidence)");
-                }
-
-                // 4. Keyword matching (AI extracted keywords)
-                if (query.Keywords != null)
-                {
-                    foreach (var kw in query.Keywords)
+                    if (!string.IsNullOrWhiteSpace(qTitle) &&
+                        !string.IsNullOrWhiteSpace(qAuthor) &&
+                        normTitle.Contains(qTitle) &&
+                        normAuthor.Contains(qAuthor))
                     {
-                        var normKw = (kw ?? "").Normalize();
+                        score += 60;
+                        explanationParts.Add("Strong title + author match");
+                    }
 
-                        if (title.Normalize().Contains(normKw))
+                    if (keywords != null)
+                    {
+                        foreach (var kw in keywords)
                         {
-                            score += 12;
-                            explanationParts.Add($"Keyword '{kw}' found in title");
-                        }
+                            var normKw = (kw ?? "").NormalizeTitle();
 
-                        if (authorNames.Normalize().Contains(normKw))
-                        {
-                            score += 8;
-                            explanationParts.Add($"Keyword '{kw}' found in author");
+                            if (normTitle.Contains(normKw))
+                            {
+                                score += 12;
+                                explanationParts.Add($"Keyword '{kw}' in title");
+                            }
+
+                            if (normAuthor.Contains(normKw))
+                            {
+                                score += 8;
+                                explanationParts.Add($"Keyword '{kw}' in author");
+                            }
                         }
                     }
                 }
 
-                if (string.IsNullOrWhiteSpace(authorNames))
+                else
                 {
-                    score -= 10;
-                    explanationParts.Add("Missing reliable author metadata");
+                    foreach (var kw in fallbackKeywords)
+                    {
+                        if (string.IsNullOrWhiteSpace(kw))
+                            continue;
+
+                        if (normTitle.Contains(kw))
+                        {
+                            score += 15;
+                            explanationParts.Add($"match: '{kw}' found in title");
+                        }
+
+                        if (normAuthor.Contains(kw))
+                        {
+                            score += 10;
+                            explanationParts.Add($"match: '{kw}' found in author");
+                        }
+
+                        if (kw.All(char.IsDigit) && kw.Length == 4)
+                        {
+                            if (book.PublishedYear == kw)
+                            {
+                                score += 25;
+                                explanationParts.Add($"Year match: {kw}");
+                            }
+                        }
+                    }
+
+                    if (explanationParts.Count == 0)
+                    {
+                        explanationParts.Add("Ranking based on query relevance signals");
+                        score += 1;
+                    }
+
+                    
+                    if (!string.IsNullOrWhiteSpace(authorNames))
+                    {
+                        score += 2;
+                    }
                 }
 
                 results.Add(new BookInfo
                 {
                     Title = title,
                     Author = authorNames,
-                    PublishedYear = book.FirstPublishYear?.ToString() ?? "",
-                    //WorkKey = book.OpenLibraryUrl,
+                    PublishedYear = book.PublishedYear ?? "",
                     Score = score,
                     ShortInfo = string.Join(". ", explanationParts)
                 });
             }
 
-            // FINAL SORTING
             return results
                 .OrderByDescending(x => x.Score)
                 .Take(5)
                 .ToList();
         }
-
     }
 }

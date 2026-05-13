@@ -1,7 +1,9 @@
-﻿using BookDiscovery.Application.Interfaces;
+﻿using BookDiscovery.Application.Common;
+using BookDiscovery.Application.Interfaces;
 using BookDiscovery.Domain.Models;
 using Microsoft.Extensions.Logging;
 using System.Text.Json;
+
 
 namespace BookDiscovery.Application.Services
 {
@@ -73,7 +75,7 @@ namespace BookDiscovery.Application.Services
             }
 
             return enriched
-                .GroupBy(x => x.Title.Normalize())
+                .GroupBy(x => x.Title.NormalizeTitle())
                 .Select(g => g.First())
                 .Take(5)
                 .ToList();
