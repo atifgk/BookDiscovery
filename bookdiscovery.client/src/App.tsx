@@ -31,7 +31,7 @@ function App() {
                             <tr key={book.title}>
                                 <td>{book.title}</td>
                                 <td>{book.author}</td>
-                                <td>{book.publishedDate}</td>
+                                <td>{book.publishedYear}</td>
                                 <td>{book.shortInfo}</td>
                             </tr>
                         ))}

@@ -11,13 +11,15 @@ namespace BookDiscovery.Server.Services
     {
         private readonly HttpClient _httpClient;
         private readonly IAiQueryParser _parser;
+        private readonly IBookRankingService _rankingService;
         private readonly ILogger<BookSearchService> _logger;
 
-        public BookSearchService(HttpClient httpClient, IAiQueryParser parser, ILogger<BookSearchService> logger)
+        public BookSearchService(HttpClient httpClient, IAiQueryParser parser, IBookRankingService rankingService, ILogger<BookSearchService> logger)
         {
             _httpClient = httpClient;
             _parser = parser;
             _logger = logger;
+            _rankingService = rankingService;
         }
 
         public async Task<List<BookResultModel>> SearchAsync(string query)
@@ -41,7 +43,7 @@ namespace BookDiscovery.Server.Services
             {
                 _logger.LogWarning("No specific intent extracted from query. Using raw query for search.");
             }
-            
+
 
             var url = $"https://openlibrary.org/search.json?q={searchQuery}";
 
@@ -63,17 +65,15 @@ namespace BookDiscovery.Server.Services
                 return new List<BookResultModel>();
             }
 
-            var results = data.Docs
+            return intent != null ? _rankingService.Rank(intent, data.Docs) : data.Docs
                 .Take(5)
                 .Select(book => new BookResultModel
                 {
-                    Title = book.Title ?? "Unknown Title",
+                    Title = book.Title ?? "",
 
-                    Author = book.AuthorNames?.FirstOrDefault()
-                               ?? "Unknown Author",
+                    Author = book.AuthorNames?.FirstOrDefault() ?? "",
 
-                    PublishedDate = book.FirstPublishYear?.ToString()
-                                     ?? "Unknown",
+                    PublishedYear = book.FirstPublishYear?.ToString() ?? "",
 
                     ShortInfo = $"Matched from Open Library search for '{query}'.",
 
@@ -86,8 +86,6 @@ namespace BookDiscovery.Server.Services
                         : null
                 })
                 .ToList();
-
-            return results;
         }
     }
 }

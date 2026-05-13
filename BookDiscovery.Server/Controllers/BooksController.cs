@@ -1,6 +1,7 @@
 ﻿using BookDiscovery.Server.Models;
 using BookDiscovery.Server.Services;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Routing.Matching;
 
 namespace BookDiscovery.Server.Controllers
 {
@@ -18,7 +19,8 @@ namespace BookDiscovery.Server.Controllers
         [HttpPost("search")]
         public async Task<IActionResult> Search([FromBody] SearchRequestModel request)
         {
-            var result = await _service.SearchAsync(request.Query);
+            var searchedBooks = await _service.SearchAsync(request.Query);
+
             return Ok(result);
         }
     }

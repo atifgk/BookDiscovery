@@ -6,12 +6,14 @@
 
         public string Author { get; set; } = string.Empty;
 
-        public string PublishedDate { get; set; } = string.Empty;
+        public string PublishedYear { get; set; } = string.Empty;
 
         public string ShortInfo { get; set; } = string.Empty;
 
         public string? CoverImage { get; set; }
 
         public string? OpenLibraryUrl { get; set; }
+
+        public int Score { get; set; } = 0;
     }
 }

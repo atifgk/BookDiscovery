@@ -26,16 +26,18 @@ public class OpenAiQueryParser : IAiQueryParser
 
     public async Task<BookQueryIntentModel?> ExtractAsync(string query)
     {
-        var apiKey = _config["OpenAI:ApiKey"];
-
-        if (string.IsNullOrWhiteSpace(apiKey))
-            throw new Exception("OpenAI API key is missing.");
-
-        var requestBody = new
+        try
         {
-            model = "gpt-4o-mini",
-            messages = new[]
+            var apiKey = _config["OpenAI:ApiKey"];
+
+            if (string.IsNullOrWhiteSpace(apiKey))
+                throw new Exception("OpenAI API key is missing.");
+
+            var requestBody = new
             {
+                model = "gpt-4o-mini",
+                messages = new[]
+                {
                 new
                 {
                     role = "system",
@@ -62,26 +64,20 @@ public class OpenAiQueryParser : IAiQueryParser
                     content = query
                 }
             },
-            temperature = 0
-        };
+                temperature = 0
+            };
 
-        var requestJson = JsonSerializer.Serialize(requestBody);
+            var requestJson = JsonSerializer.Serialize(requestBody);
 
-        var request = new HttpRequestMessage(
-            HttpMethod.Post,
-            "https://api.openai.com/v1/chat/completions"
-        );
+            var request = new HttpRequestMessage(
+                HttpMethod.Post,
+                "https://api.openai.com/v1/chat/completions"
+            );
 
-        request.Headers.Authorization =
-            new AuthenticationHeaderValue("Bearer", apiKey);
+            request.Headers.Authorization =
+                new AuthenticationHeaderValue("Bearer", apiKey);
 
-        request.Content = new StringContent(requestJson, Encoding.UTF8, "application/json");
-
-        const int maxRetries = 3;
-
-        for (int attempt = 1; attempt <= maxRetries; attempt++)
-        {
-            _logger.LogInformation("OpenAI attempt {Attempt} for query: {Query}", attempt, query);
+            request.Content = new StringContent(requestJson, Encoding.UTF8, "application/json");
 
             var response = await _httpClient.SendAsync(request);
 
@@ -93,22 +89,6 @@ public class OpenAiQueryParser : IAiQueryParser
 
             var errorBody = await response.Content.ReadAsStringAsync();
 
-            _logger.LogWarning(
-                "OpenAI failed (Attempt {Attempt}) Status: {Status} Body: {Body}",
-                attempt,
-                response.StatusCode,
-                errorBody
-            );
-
-            // 429 = rate limit → retry with backoff
-            if ((int)response.StatusCode == 429)
-            {
-                var delay = attempt * 1000; // 1s, 2s, 3s
-                await Task.Delay(delay);
-                continue;
-            }
-
-            // 401/403 = stop immediately (bad key)
             if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized ||
                 response.StatusCode == System.Net.HttpStatusCode.Forbidden)
             {
@@ -117,11 +97,15 @@ public class OpenAiQueryParser : IAiQueryParser
 
             // other errors
             _logger.LogError($"OpenAI error: {response.StatusCode} - {errorBody}");
+
+            return null;
         }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, ex.Message);
 
-        _logger.LogError("OpenAI failed after multiple retries (rate limit or network issue).");
-
-        return null;
+            return null;
+        }
     }
 
     private BookQueryIntentModel ParseResponse(string json)
@@ -137,12 +121,16 @@ public class OpenAiQueryParser : IAiQueryParser
         if (string.IsNullOrWhiteSpace(content))
             return new BookQueryIntentModel();
 
-        return JsonSerializer.Deserialize<BookQueryIntentModel>(
+        var result = JsonSerializer.Deserialize<BookQueryIntentModel>(
                    content,
                    new JsonSerializerOptions
                    {
                        PropertyNameCaseInsensitive = true
                    })
                ?? new BookQueryIntentModel();
+
+        result.IsAIExtracted = true;
+
+        return result;
     }
 }

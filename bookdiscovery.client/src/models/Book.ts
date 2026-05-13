@@ -1,6 +1,6 @@
 export default interface Book {
     title: string;
     author: string;
-    publishedDate: string;
+    publishedYear: string;
     shortInfo: string;
 }
