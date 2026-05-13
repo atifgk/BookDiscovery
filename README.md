@@ -1,50 +1,51 @@
 # 📚 Book Discovery App
 
-A full-stack AI-powered book discovery system that transforms messy, unstructured text queries into accurate book recommendations using **OpenAI (intent extraction)**, **Open Library API**, and a custom ranking engine built with **.NET 8**.
+A full-stack AI-powered book discovery system that transforms messy, unstructured text queries into accurate book recommendations using **AI intent extraction (OpenAI / Gemini)**, **Open Library API**, and a custom ranking engine built with **.NET 8**.
 
 ---
 
 ## 🚀 Features
 
 ### 🧠 AI-Powered Query Understanding
-Uses OpenAI to extract user intent from natural language book queries.
+Uses an LLM (OpenAI or Gemini) to extract structured intent from natural language book queries.
 
 ### 📚 Smart Book Search
-Fetches relevant books from the Open Library API based on processed intent.
+Fetches relevant books from the Open Library API based on extracted intent.
 
 ### 🧮 Intelligent Ranking Engine
-Custom ranking logic in .NET 8 to prioritize the most relevant books.
+Custom ranking logic in .NET 8 prioritizes the most relevant results.
 
 ### 🧾 Explainable Results
-Each recommendation includes reasoning behind why a book was suggested.
+Each recommendation includes a clear reason why the book was selected.
 
 ---
 
 ## ⚡ Full Stack Architecture
 
-- 🎨 **Frontend:** React
-- ⚙️ **Backend:** .NET 8 Web API
-- 🤖 **AI Layer:** OpenAI (Intent Extraction)
-- 📖 **Data Source:** Open Library API
+- 🎨 **Frontend:** React  
+- ⚙️ **Backend:** .NET 8 Web API  
+- 🤖 **AI Layer:** OpenAI / Gemini (Intent Extraction)  
+- 📖 **Data Source:** Open Library API  
 
 ---
 
 ## 🏗️ How It Works
 
 1. User enters a natural language query  
-2. OpenAI extracts intent (genre, topic, mood, etc.)  
-3. Backend calls Open Library API  
+2. AI extracts structured intent (title, author, genre, keywords)  
+3. Backend queries Open Library API  
 4. Ranking engine scores and sorts results  
 5. API returns structured, explainable recommendations  
 
 ---
 
-## 📦 Tech Stack
+## 🔐 Configuration
 
-- React
-- .NET 8
-- OpenAI API
-- Open Library API
-- RESTful Architecture
+### appsettings.json
 
----
+```json
+{
+  "Gemini": {
+    "ApiKey": "YOUR_API_KEY_HERE"
+  }
+}
